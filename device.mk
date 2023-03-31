@@ -25,6 +25,9 @@ $(call inherit-product, hardware/qcom-caf/common/common.mk)
 # Call the Dolby setup
 $(call inherit-product, vendor/dolby/dolby.mk)
 
+# Call the MiuiCamera setup
+$(call inherit-product-if-exists, vendor/xiaomi/miuicamera/miuicamera.mk)
+
 # Permissions
 PRODUCT_COPY_FILES += \
     frameworks/native/data/etc/android.hardware.audio.low_latency.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.audio.low_latency.xml \
