@@ -28,41 +28,45 @@
 #
 
 function configure_zram_parameters() {
-    MemTotalStr=`cat /proc/meminfo | grep MemTotal`
-    MemTotal=${MemTotalStr:16:8}
+    # Never change the compressor or reformat an initialized ZRAM device.
+    [ -r /sys/block/zram0/disksize ] || return 0
+    disksize=$(cat /sys/block/zram0/disksize) || return 1
+    case "$disksize" in
+        ''|*[!0-9]*) return 1 ;;
+    esac
+    [ "$disksize" -eq 0 ] || return 0
 
-    # Use half of RAM for zram, capped at 4 GiB.
-    let RamSizeGB="( $MemTotal / 1048576 ) + 1"
-    diskSizeUnit=M
-    let zRamSizeMB="( $RamSizeGB * 1024 ) / 2"
-
-    # use MB avoid 32 bit overflow
-    if [ $zRamSizeMB -gt 4096 ]; then
-        let zRamSizeMB=4096
-    fi
-
-    if [ -f /sys/block/zram0/disksize ]; then
-        disksize=`cat /sys/block/zram0/disksize`
-        if [ $disksize -eq 0 ]; then
-            if [ -f /sys/block/zram0/use_dedup ]; then
-                echo 1 > /sys/block/zram0/use_dedup
-            fi
-            zramDiskSize=$zRamSizeMB$diskSizeUnit
-            echo $zramDiskSize > /sys/block/zram0/disksize
-
-            # ZRAM may use more memory than it saves if SLAB_STORE_USER
-            # debug option is enabled.
-            if [ -e /sys/kernel/slab/zs_handle ]; then
-                echo 0 > /sys/kernel/slab/zs_handle/store_user
-            fi
-            if [ -e /sys/kernel/slab/zspage ]; then
-                echo 0 > /sys/kernel/slab/zspage/store_user
-            fi
-
-            mkswap /dev/block/zram0
-            swapon /dev/block/zram0 -p 32758
+    # Parse the value, not a fixed-width slice of /proc/meminfo.
+    MemTotal=
+    while read -r key value unit; do
+        if [ "$key" = "MemTotal:" ]; then
+            MemTotal=$value
+            break
         fi
+    done < /proc/meminfo
+    case "$MemTotal" in
+        ''|*[!0-9]*) return 1 ;;
+    esac
+    [ "$MemTotal" -gt 0 ] || return 1
+
+    # Preserve munch's half-of-RAM policy, rounded to GiB and capped at 4 GiB.
+    RamSizeGB=$((MemTotal / 1048576 + 1))
+    zRamSizeMB=$((RamSizeGB * 1024 / 2))
+    [ "$zRamSizeMB" -le 4096 ] || zRamSizeMB=4096
+
+    if [ -f /sys/block/zram0/use_dedup ]; then
+        echo 1 > /sys/block/zram0/use_dedup
     fi
+    echo "${zRamSizeMB}M" > /sys/block/zram0/disksize || return 1
+
+    # Retain the existing debug-SLAB mitigation on kernels that expose it.
+    for slab in zs_handle zspage; do
+        if [ -e /sys/kernel/slab/$slab/store_user ]; then
+            echo 0 > /sys/kernel/slab/$slab/store_user
+        fi
+    done
+    mkswap /dev/block/zram0 || return 1
+    swapon /dev/block/zram0 -p 32758
 }
 
 function configure_read_ahead_kb_values() {
@@ -83,8 +87,6 @@ function configure_read_ahead_kb_values() {
 }
 
 function configure_memory_parameters() {
-    echo 0 > /proc/sys/vm/page-cluster
-
     #add memory limit to camera cgroup
     MemTotalStr=`cat /proc/meminfo | grep MemTotal`
     MemTotal=${MemTotalStr:16:8}
@@ -94,7 +96,10 @@ function configure_memory_parameters() {
         let LimitSize=524288000
     fi
 
-    echo $LimitSize > /dev/memcg/camera/memory.soft_limit_in_bytes
+    # This interface only exists with the legacy memory controller.
+    if [ -f /dev/memcg/camera/memory.soft_limit_in_bytes ]; then
+        echo $LimitSize > /dev/memcg/camera/memory.soft_limit_in_bytes
+    fi
 
     # Set allocstall_threshold to 0 for all targets.
     # Set swappiness to 60 for all targets
