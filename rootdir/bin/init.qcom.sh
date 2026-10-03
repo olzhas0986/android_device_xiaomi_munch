@@ -41,35 +41,49 @@ start_msm_irqbalance_kona
 #
 # Make modem config folder and copy firmware config to that folder for RIL
 #
-firmware_config=/vendor/firmware_mnt/image/modem_pr/mcfg/configs
-firmware_version=/vendor/firmware_mnt/verinfo/ver_info.txt
-firmware_ota=/vendor/firmware_mnt/image/modem_pr/mbn_ota.txt
-modem_config=/data/vendor/modem_config
+function copy_modem_config() {
+    local source=/vendor/firmware_mnt
+    local dest=/data/vendor/modem_config
+    local current previous
 
-# A missing firmware mount must not erase the last working modem configuration.
-if [ -r "$firmware_version" ] && [ -d "$firmware_config" ] &&
-        [ -r "$firmware_ota" ] && cur_version_info=$(cat "$firmware_version") &&
-        [ -n "$cur_version_info" ]; then
-    prev_version_info=$(cat "$modem_config/ver_info.txt" 2>/dev/null)
-    if [ ! -f "$modem_config/ver_info.txt" ] || [ "$prev_version_info" != "$cur_version_info" ]; then
-        if chmod g+w -R "$modem_config" &&
-                rm -rf "$modem_config"/* &&
-                cp --preserve=m -dr "$firmware_config"/. "$modem_config"/ &&
-                cp --preserve=m -d "$firmware_ota" "$modem_config"/ &&
-                chown -hR radio.root "$modem_config" &&
-                cp --preserve=m -d "$firmware_version" "$modem_config"/ &&
-                chown radio.root "$modem_config/ver_info.txt"; then
-            setprop ro.vendor.ril.mbn_copy_completed 1
-        else
-            rm -f "$modem_config/ver_info.txt"
-            log -t init.qcom -p e "Failed to copy modem configuration"
-        fi
-    else
-        setprop ro.vendor.ril.mbn_copy_completed 1
+    # Do not destroy a usable cache when the firmware mount is unavailable.
+    current=$(cat "$source/verinfo/ver_info.txt") || return 1
+    [ -n "$current" ] || return 1
+    [ -r "$source/image/modem_pr/mbn_ota.txt" ] || return 1
+    [ -d "$source/image/modem_pr/mcfg/configs" ] || return 1
+    set -- "$source/image/modem_pr/mcfg/configs/"*
+    [ -e "$1" ] || return 1
+
+    previous=
+    if [ -f "$dest/ver_info.txt" ]; then
+        previous=$(cat "$dest/ver_info.txt") || return 1
     fi
-    chmod g-w "$modem_config"
+    if [ "$previous" != "$current" ]; then
+        # Existing configuration subdirectories preserve firmware read-only modes.
+        # The parent is created by init with group root and mode 0570.
+        for entry in "$dest/"*; do
+            [ -e "$entry" ] || [ -L "$entry" ] || continue
+            chmod -R g+w "$entry" || return 1
+        done
+        rm -rf "$dest/"* || return 1
+        cp --preserve=m -dr "$@" "$dest/" || return 1
+        cp --preserve=m -d "$source/image/modem_pr/mbn_ota.txt" "$dest/" || return 1
+        chown -hR radio.root "$dest/"* || return 1
+
+        # Publish the version last. Failed copies must be retried next boot.
+        cp --preserve=m -d "$source/verinfo/ver_info.txt" "$dest/ver_info.txt" &&
+            chown radio.root "$dest/ver_info.txt" || {
+                rm -f "$dest/ver_info.txt"
+                return 1
+            }
+    fi
+    chmod g-w "$dest" || return 1
+}
+
+if copy_modem_config; then
+    setprop ro.vendor.ril.mbn_copy_completed 1
 else
-    log -t init.qcom -p e "Modem firmware configuration is unavailable"
+    log -t init.qcom -p e "Modem configuration copy failed; leaving completion unset"
 fi
 
 #check build variant for printk logging
