@@ -300,8 +300,8 @@ public class ThermalSettingsFragment extends SettingsBasePreferenceFragment
             implements AdapterView.OnItemSelectedListener, SectionIndexer {
 
         private List<ApplicationsState.AppEntry> mEntries = new ArrayList<>();
-        private String[] mSections;
-        private int[] mPositions;
+        private String[] mSections = new String[0];
+        private int[] mPositions = new int[0];
 
         public AllPackagesAdapter(Context context) {
             mActivityFilter = new ActivityFilter(context.getPackageManager());
