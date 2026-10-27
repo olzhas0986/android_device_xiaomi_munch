@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # Copyright (C) 2021 The LineageOS Project
 #
@@ -9,9 +9,7 @@ from functools import cmp_to_key
 from locale import LC_ALL, setlocale, strcoll
 from pathlib import Path
 
-FILES = [Path(file) for file in [
-    "proprietary-files.txt",
-]]
+FILES = [Path(__file__).resolve().with_name("proprietary-files.txt")]
 
 setlocale(LC_ALL, "C")
 
