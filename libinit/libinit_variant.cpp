@@ -11,6 +11,7 @@
 #include <android-base/logging.h>
 #include <android-base/properties.h>
 #include <string>
+#include <unistd.h>
 
 using android::base::GetProperty;
 
