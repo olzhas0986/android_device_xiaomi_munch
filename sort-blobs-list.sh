@@ -6,14 +6,13 @@
 
 set -e
 
+# Load sort-blobs-list.py and do some sanity checks
+MY_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+
 # List of files to sort
 PROPRIETARY_FILES_TXT=(
-    "proprietary-files.txt"
+    "${MY_DIR}/proprietary-files.txt"
 )
-
-# Load sort-blobs-list.py and do some sanity checks
-MY_DIR="${BASH_SOURCE%/*}"
-if [[ ! -d "${MY_DIR}" ]]; then MY_DIR="${PWD}"; fi
 
 ANDROID_ROOT="${MY_DIR}/../../.."
 
