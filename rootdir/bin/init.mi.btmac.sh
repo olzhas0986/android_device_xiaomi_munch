@@ -12,10 +12,23 @@ if [ ! -f "$BT_MAC_HEX_PATH" ]; then
     exit
 fi
 
-# raw mac address without colons
-RAW_MAC=$(xxd -p "$BT_MAC_HEX_PATH");
-# convert it into format recognized by bluetooth hal
-DEC_MAC=$(echo "$RAW_MAC" | sed 's!^M$!!;s!\-!!g;s!\.!!g;s!\(..\)!\1:!g;s!:$!!')
-# set the mac address using persist property
-setprop persist.vendor.service.bdroid.bdaddr "$DEC_MAC"
-logi "bt.mac file found, setting mac addr"
+# The file must contain exactly one six-byte Bluetooth address.
+RAW_MAC=$(xxd -p "$BT_MAC_HEX_PATH")
+if [ "${#RAW_MAC}" -ne 12 ]; then
+    logi "Invalid bt.mac length, leaving the current address unchanged"
+    exit 1
+fi
+case "$RAW_MAC" in
+    *[!0-9a-fA-F]* | 000000000000 | ffffffffffff | FFFFFFFFFFFF)
+        logi "Invalid bt.mac address, leaving the current address unchanged"
+        exit 1
+        ;;
+esac
+
+DEC_MAC=$(printf '%s' "$RAW_MAC" | sed 's/../&:/g;s/:$//')
+if setprop persist.vendor.service.bdroid.bdaddr "$DEC_MAC"; then
+    logi "bt.mac file found, setting mac addr"
+else
+    logi "Failed to set Bluetooth address"
+    exit 1
+fi
