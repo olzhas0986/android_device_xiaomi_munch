@@ -160,12 +160,15 @@ echo 85 > /proc/sys/kernel/sched_group_downmigrate
 echo 1 > /proc/sys/kernel/sched_walt_rotate_big_tasks
 echo 400000000 > /proc/sys/kernel/sched_coloc_downmigrate_ns
 
-# cpuset parameters
-    echo 0-2     > /dev/cpuset/background/cpus
-    echo 0-3     > /dev/cpuset/system-background/cpus
-    echo 4-7     > /dev/cpuset/foreground/boost/cpus
+# Normal boots receive their runtime cpusets from init.qcom.power.rc.
+# Charger boots do not reach sys.boot_completed, so retain their setup here.
+if [ "$(getprop ro.bootmode)" = "charger" ]; then
+    echo 0-2 > /dev/cpuset/background/cpus
+    echo 0-3 > /dev/cpuset/system-background/cpus
+    echo 4-7 > /dev/cpuset/foreground/boost/cpus
     echo 0-2,4-7 > /dev/cpuset/foreground/cpus
-    echo 0-7     > /dev/cpuset/top-app/cpus
+    echo 0-7 > /dev/cpuset/top-app/cpus
+fi
 
 # Turn off scheduler boost at the end
 echo 0 > /proc/sys/kernel/sched_boost
