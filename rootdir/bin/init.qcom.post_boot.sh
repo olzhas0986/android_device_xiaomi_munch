@@ -3529,12 +3529,12 @@ case "$target" in
                 do
                     echo "bw_hwmon" > $cpubw/governor
                     echo 762 > $cpubw/min_freq
-                    if [ ${ddr_type:4:2} == $ddr_type4 ]; then
+                    if [ "${ddr_type:4:2}" = "$ddr_type4" ]; then
                         # LPDDR4
                         echo "2288 3440 4173 5195 5859 7759 10322 11863 13763" > $cpubw/bw_hwmon/mbps_zones
                         echo 85 > $cpubw/bw_hwmon/io_percent
                     fi
-                    if [ ${ddr_type:4:2} == $ddr_type3 ]; then
+                    if [ "${ddr_type:4:2}" = "$ddr_type3" ]; then
                         # LPDDR3
                         echo "1525 3440 5195 5859 7102" > $cpubw/bw_hwmon/mbps_zones
                         echo 34 > $cpubw/bw_hwmon/io_percent
@@ -4243,12 +4243,12 @@ case "$target" in
                     echo "bw_hwmon" > $cpubw/governor
                     echo 50 > $cpubw/polling_interval
                     echo 762 > $cpubw/min_freq
-                    if [ ${ddr_type:4:2} == $ddr_type4 ]; then
+                    if [ "${ddr_type:4:2}" = "$ddr_type4" ]; then
                         # LPDDR4
                         echo "2288 3440 4173 5195 5859 7759 10322 11863 13763" > $cpubw/bw_hwmon/mbps_zones
                         echo 85 > $cpubw/bw_hwmon/io_percent
                     fi
-                    if [ ${ddr_type:4:2} == $ddr_type3 ]; then
+                    if [ "${ddr_type:4:2}" = "$ddr_type3" ]; then
                         # LPDDR3
                         echo "1525 3440 5195 5859 7102" > $cpubw/bw_hwmon/mbps_zones
                         echo 34 > $cpubw/bw_hwmon/io_percent
@@ -4419,12 +4419,12 @@ case "$target" in
                     echo "bw_hwmon" > $cpubw/governor
                     echo 50 > $cpubw/polling_interval
                     echo 762 > $cpubw/min_freq
-                    if [ ${ddr_type:4:2} == $ddr_type4 ]; then
+                    if [ "${ddr_type:4:2}" = "$ddr_type4" ]; then
                         # LPDDR4
                         echo "2288 3440 4173 5195 5859 7759 10322 11863 13763" > $cpubw/bw_hwmon/mbps_zones
                         echo 85 > $cpubw/bw_hwmon/io_percent
                     fi
-                    if [ ${ddr_type:4:2} == $ddr_type3 ]; then
+                    if [ "${ddr_type:4:2}" = "$ddr_type3" ]; then
                         # LPDDR3
                         echo "1525 3440 5195 5859 7102" > $cpubw/bw_hwmon/mbps_zones
                         echo 34 > $cpubw/bw_hwmon/io_percent
@@ -5725,7 +5725,7 @@ case "$target" in
 	echo "schedutil" > /sys/devices/system/cpu/cpufreq/policy0/scaling_governor
 	echo 0 > /sys/devices/system/cpu/cpufreq/policy0/schedutil/down_rate_limit_us
 	echo 0 > /sys/devices/system/cpu/cpufreq/policy0/schedutil/up_rate_limit_us
-        if [ $rev == "2.0" ] || [ $rev == "2.1" ]; then
+        if [ "$rev" = "2.0" ] || [ "$rev" = "2.1" ]; then
 		echo 1248000 > /sys/devices/system/cpu/cpufreq/policy0/schedutil/hispeed_freq
 	else
 		echo 1228800 > /sys/devices/system/cpu/cpufreq/policy0/schedutil/hispeed_freq
@@ -5750,7 +5750,7 @@ case "$target" in
 	echo "schedutil" > /sys/devices/system/cpu/cpufreq/policy7/scaling_governor
 	echo 0 > /sys/devices/system/cpu/cpufreq/policy7/schedutil/down_rate_limit_us
 	echo 0 > /sys/devices/system/cpu/cpufreq/policy7/schedutil/up_rate_limit_us
-        if [ $rev == "2.0" ] || [ $rev == "2.1" ]; then
+        if [ "$rev" = "2.0" ] || [ "$rev" = "2.1" ]; then
 		echo 1632000 > /sys/devices/system/cpu/cpufreq/policy7/schedutil/hispeed_freq
 	else
 		echo 1612800 > /sys/devices/system/cpu/cpufreq/policy7/schedutil/hispeed_freq
@@ -5779,9 +5779,9 @@ case "$target" in
 	    for llccbw in $device/*cpu-llcc-ddr-bw/devfreq/*cpu-llcc-ddr-bw
 	    do
 		echo "bw_hwmon" > $llccbw/governor
-		if [ ${ddr_type:4:2} == $ddr_type4 ]; then
+		if [ "${ddr_type:4:2}" = "$ddr_type4" ]; then
 			echo "1720 2086 2929 3879 5161 5931 6881 7980" > $llccbw/bw_hwmon/mbps_zones
-		elif [ ${ddr_type:4:2} == $ddr_type5 ]; then
+		elif [ "${ddr_type:4:2}" = "$ddr_type5" ]; then
 			echo "1720 2086 2929 3879 5931 6881 7980 10437" > $llccbw/bw_hwmon/mbps_zones
 		fi
 		echo 4 > $llccbw/bw_hwmon/sample_ms
@@ -5800,9 +5800,9 @@ case "$target" in
 	    do
 		echo 1 > /sys/devices/virtual/npu/msm_npu/pwr
 		echo "bw_hwmon" > $npubw/governor
-		if [ ${ddr_type:4:2} == $ddr_type4 ]; then
+		if [ "${ddr_type:4:2}" = "$ddr_type4" ]; then
 			echo "1720 2086 2929 3879 5931 6881 7980" > $npubw/bw_hwmon/mbps_zones
-		elif [ ${ddr_type:4:2} == $ddr_type5 ]; then
+		elif [ "${ddr_type:4:2}" = "$ddr_type5" ]; then
 			echo "1720 2086 2929 3879 5931 6881 7980 10437" > $npubw/bw_hwmon/mbps_zones
 		fi
 		echo 4 > $npubw/bw_hwmon/sample_ms
