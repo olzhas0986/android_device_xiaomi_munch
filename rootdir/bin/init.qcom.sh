@@ -41,26 +41,36 @@ start_msm_irqbalance_kona
 #
 # Make modem config folder and copy firmware config to that folder for RIL
 #
-if [ -f /data/vendor/modem_config/ver_info.txt ]; then
-    prev_version_info=`cat /data/vendor/modem_config/ver_info.txt`
-else
-    prev_version_info=""
-fi
+firmware_config=/vendor/firmware_mnt/image/modem_pr/mcfg/configs
+firmware_version=/vendor/firmware_mnt/verinfo/ver_info.txt
+firmware_ota=/vendor/firmware_mnt/image/modem_pr/mbn_ota.txt
+modem_config=/data/vendor/modem_config
 
-cur_version_info=`cat /vendor/firmware_mnt/verinfo/ver_info.txt`
-if [ ! -f /vendor/firmware_mnt/verinfo/ver_info.txt -o "$prev_version_info" != "$cur_version_info" ]; then
-    # add W for group recursively before delete
-    chmod g+w -R /data/vendor/modem_config/*
-    rm -rf /data/vendor/modem_config/*
-    # preserve the read only mode for all subdir and files
-    cp --preserve=m -dr /vendor/firmware_mnt/image/modem_pr/mcfg/configs/* /data/vendor/modem_config
-    cp --preserve=m -d /vendor/firmware_mnt/verinfo/ver_info.txt /data/vendor/modem_config/
-    cp --preserve=m -d /vendor/firmware_mnt/image/modem_pr/mbn_ota.txt /data/vendor/modem_config/
-    # the group must be root, otherwise this script could not add "W" for group recursively
-    chown -hR radio.root /data/vendor/modem_config/*
+# A missing firmware mount must not erase the last working modem configuration.
+if [ -r "$firmware_version" ] && [ -d "$firmware_config" ] &&
+        [ -r "$firmware_ota" ] && cur_version_info=$(cat "$firmware_version") &&
+        [ -n "$cur_version_info" ]; then
+    prev_version_info=$(cat "$modem_config/ver_info.txt" 2>/dev/null)
+    if [ ! -f "$modem_config/ver_info.txt" ] || [ "$prev_version_info" != "$cur_version_info" ]; then
+        if chmod g+w -R "$modem_config" &&
+                rm -rf "$modem_config"/* &&
+                cp --preserve=m -dr "$firmware_config"/. "$modem_config"/ &&
+                cp --preserve=m -d "$firmware_ota" "$modem_config"/ &&
+                chown -hR radio.root "$modem_config" &&
+                cp --preserve=m -d "$firmware_version" "$modem_config"/ &&
+                chown radio.root "$modem_config/ver_info.txt"; then
+            setprop ro.vendor.ril.mbn_copy_completed 1
+        else
+            rm -f "$modem_config/ver_info.txt"
+            log -t init.qcom -p e "Failed to copy modem configuration"
+        fi
+    else
+        setprop ro.vendor.ril.mbn_copy_completed 1
+    fi
+    chmod g-w "$modem_config"
+else
+    log -t init.qcom -p e "Modem firmware configuration is unavailable"
 fi
-chmod g-w /data/vendor/modem_config
-setprop ro.vendor.ril.mbn_copy_completed 1
 
 #check build variant for printk logging
 #current default minimum boot-time-default
