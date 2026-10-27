@@ -5,9 +5,9 @@
 //
 
 cc_library_static {
-    name: "init_xiaomi_kona",
+    name: "init_xiaomi_munch",
     srcs: [
-        "init_xiaomi_kona.cpp",
+        "init_xiaomi_munch.cpp",
         "libinit_dalvik_heap.cpp",
         "libinit_variant.cpp",
         "libinit_utils.cpp",
@@ -15,10 +15,8 @@ cc_library_static {
     header_libs: ["libvariant_headers"],
     whole_static_libs: [
         "libbase",
-    ] + select(soong_config_variable("xiaomi_kona", "variant_lib"), {
-        any @ lib: [lib],
-        default: ["libvariant_default"],
-    }),
+        "libvariant_xiaomi_munch",
+    ],
     include_dirs: ["system/core/init"],
     recovery_available: true,
 }
@@ -26,6 +24,6 @@ cc_library_static {
 cc_library_static {
     name: "libvariant_xiaomi_munch",
     srcs: ["libvariant_xiaomi_munch.cpp"],
-    header_libs: ["//device/xiaomi/munch:libvariant_headers"],
+    header_libs: ["libvariant_headers"],
     recovery_available: true,
 }

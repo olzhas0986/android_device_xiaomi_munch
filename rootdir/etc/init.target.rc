@@ -118,7 +118,6 @@ on post-fs-data
     mkdir /data/vendor/thermal/config 0771 root system
     chown gps system /dev/ttyHS1
 
-
 on early-boot
     start vendor.sensors
     verity_update_state
@@ -158,8 +157,6 @@ on boot
     chmod 0664 /sys/class/drm/card0-DSI-1/disp_count
     chown system system /sys/class/drm/card0-DSI-1/disp_pcc
     chmod 0664 /sys/class/drm/card0-DSI-1/disp_pcc
-    #camera motor
-    chmod 0777 /sys/class/drv8846/ti-drv8846/debug
     chown system system /sys/class/backlight/panel0-backlight/brightness_clone
     chmod 0664 /sys/class/power_supply/battery/dc_thermal_levels
     chown system system /sys/class/thermal/thermal_message/sconfig
@@ -183,9 +180,6 @@ on boot
     chown root system /sys/module/migt/parameters/reset_clus_affinity_uidlist
     chmod 0664 /sys/module/migt/parameters/reset_clus_affinity_uidlist
 
-on property:persist.vendor.sys.fp.fod.large_field=1
-    write sys/bus/i2c/devices/3-0049/fod_area 1
-
 on boot && property:persist.vendor.usb.controller.default=*
     setprop vendor.usb.controller ${persist.vendor.usb.controller.default}
 
@@ -196,67 +190,10 @@ on charger
     mkdir /mnt/vendor/persist/subsys 0770 root system
     start vendor.power_off_alarm
     setprop sys.usb.controller a600000.dwc3
-    start leds-sh
 
 on property:vendor.audio.cit.spkcal.copy=true
-    copy /data/vendor/cit/cs35l41_cal.bin /mnt/vendor/persist/audio/cs35l41_cal.bin
-    copy /data/vendor/cit/cs35l41_cal_right.bin /mnt/vendor/persist/audio/cs35l41_cal_right.bin
-    copy /data/vendor/cit/cs35l41_cal.txt /mnt/vendor/persist/audio/cs35l41_cal.txt
-    copy /data/vendor/cit/cs35l41_cal_right.txt /mnt/vendor/persist/audio/cs35l41_cal_right.txt
-    chmod 666 /mnt/vendor/persist/audio/cs35l41_cal.bin
-    chmod 666 /mnt/vendor/persist/audio/cs35l41_cal_right.bin
-    chmod 666 /mnt/vendor/persist/audio/cs35l41_cal.txt
-    chmod 666 /mnt/vendor/persist/audio/cs35l41_cal_right.txt
     copy /data/vendor/cit/tfa9874_chk.txt /mnt/vendor/persist/audio/tfa9874_chk.txt
     chmod 666 /mnt/vendor/persist/audio/tfa9874_chk.txt
-    chmod 444 /data/vendor/cit/cs35l41_cal_spk1.bin
-    chmod 444 /data/vendor/cit/cs35l41_cal_spk1.txt
-    chmod 444 /data/vendor/cit/cs35l41_cal_spk2.bin
-    chmod 444 /data/vendor/cit/cs35l41_cal_spk2.txt
-    chmod 444 /data/vendor/cit/cs35l41_cal_spk3.bin
-    chmod 444 /data/vendor/cit/cs35l41_cal_spk3.txt
-    chmod 444 /data/vendor/cit/cs35l41_cal_spk4.bin
-    chmod 444 /data/vendor/cit/cs35l41_cal_spk4.txt
-    chmod 444 /data/vendor/cit/cs35l41_cal_spk5.bin
-    chmod 444 /data/vendor/cit/cs35l41_cal_spk5.txt
-    chmod 444 /data/vendor/cit/cs35l41_cal_spk6.bin
-    chmod 444 /data/vendor/cit/cs35l41_cal_spk6.txt
-    chmod 444 /data/vendor/cit/cs35l41_cal_spk7.bin
-    chmod 444 /data/vendor/cit/cs35l41_cal_spk7.txt
-    chmod 444 /data/vendor/cit/cs35l41_cal_spk8.bin
-    chmod 444 /data/vendor/cit/cs35l41_cal_spk8.txt
-    copy /data/vendor/cit/cs35l41_cal_spk1.bin /mnt/vendor/persist/audio/cs35l41_cal_spk1.bin
-    copy /data/vendor/cit/cs35l41_cal_spk1.txt /mnt/vendor/persist/audio/cs35l41_cal_spk1.txt
-    copy /data/vendor/cit/cs35l41_cal_spk2.bin /mnt/vendor/persist/audio/cs35l41_cal_spk2.bin
-    copy /data/vendor/cit/cs35l41_cal_spk2.txt /mnt/vendor/persist/audio/cs35l41_cal_spk2.txt
-    copy /data/vendor/cit/cs35l41_cal_spk3.bin /mnt/vendor/persist/audio/cs35l41_cal_spk3.bin
-    copy /data/vendor/cit/cs35l41_cal_spk3.txt /mnt/vendor/persist/audio/cs35l41_cal_spk3.txt
-    copy /data/vendor/cit/cs35l41_cal_spk4.bin /mnt/vendor/persist/audio/cs35l41_cal_spk4.bin
-    copy /data/vendor/cit/cs35l41_cal_spk4.txt /mnt/vendor/persist/audio/cs35l41_cal_spk4.txt
-    copy /data/vendor/cit/cs35l41_cal_spk5.bin /mnt/vendor/persist/audio/cs35l41_cal_spk5.bin
-    copy /data/vendor/cit/cs35l41_cal_spk5.txt /mnt/vendor/persist/audio/cs35l41_cal_spk5.txt
-    copy /data/vendor/cit/cs35l41_cal_spk6.bin /mnt/vendor/persist/audio/cs35l41_cal_spk6.bin
-    copy /data/vendor/cit/cs35l41_cal_spk6.txt /mnt/vendor/persist/audio/cs35l41_cal_spk6.txt
-    copy /data/vendor/cit/cs35l41_cal_spk7.bin /mnt/vendor/persist/audio/cs35l41_cal_spk7.bin
-    copy /data/vendor/cit/cs35l41_cal_spk7.txt /mnt/vendor/persist/audio/cs35l41_cal_spk7.txt
-    copy /data/vendor/cit/cs35l41_cal_spk8.bin /mnt/vendor/persist/audio/cs35l41_cal_spk8.bin
-    copy /data/vendor/cit/cs35l41_cal_spk8.txt /mnt/vendor/persist/audio/cs35l41_cal_spk8.txt
-    chmod 666 /mnt/vendor/persist/audio/cs35l41_cal_spk1.bin
-    chmod 666 /mnt/vendor/persist/audio/cs35l41_cal_spk1.txt
-    chmod 666 /mnt/vendor/persist/audio/cs35l41_cal_spk2.bin
-    chmod 666 /mnt/vendor/persist/audio/cs35l41_cal_spk2.txt
-    chmod 666 /mnt/vendor/persist/audio/cs35l41_cal_spk3.bin
-    chmod 666 /mnt/vendor/persist/audio/cs35l41_cal_spk3.txt
-    chmod 666 /mnt/vendor/persist/audio/cs35l41_cal_spk4.bin
-    chmod 666 /mnt/vendor/persist/audio/cs35l41_cal_spk4.txt
-    chmod 666 /mnt/vendor/persist/audio/cs35l41_cal_spk5.bin
-    chmod 666 /mnt/vendor/persist/audio/cs35l41_cal_spk5.txt
-    chmod 666 /mnt/vendor/persist/audio/cs35l41_cal_spk6.bin
-    chmod 666 /mnt/vendor/persist/audio/cs35l41_cal_spk6.txt
-    chmod 666 /mnt/vendor/persist/audio/cs35l41_cal_spk7.bin
-    chmod 666 /mnt/vendor/persist/audio/cs35l41_cal_spk7.txt
-    chmod 666 /mnt/vendor/persist/audio/cs35l41_cal_spk8.bin
-    chmod 666 /mnt/vendor/persist/audio/cs35l41_cal_spk8.txt
 
 service audioshell_service /vendor/bin/audioshell_service
     oneshot
@@ -289,15 +226,6 @@ service vendor.per_proxy /vendor/bin/pm-proxy
     user system
     group system
     disabled
-
-service vendor.mdm_helper /vendor/bin/mdm_helper
-    class core
-    group system wakelock
-    disabled
-
-service vendor.mdm_launcher /vendor/bin/sh /vendor/bin/init.mdm.sh
-    class core
-    oneshot
 
 on property:init.svc.vendor.per_mgr=running
     start vendor.per_proxy
@@ -344,16 +272,6 @@ on post-fs-data
     restorecon /sys/module/migt/parameters/fas_power_mod
     chmod 0666 /sys/module/migt/parameters/mi_viptask
     restorecon /sys/module/migt/parameters/mi_viptask
-
-service mi-serial-sh /vendor/bin/init.mi.serial.sh
-    class late_start
-    user root
-    group root system radio
-    disabled
-    oneshot
-
-on post-fs && property:ro.product.device=elish
-    start mi-serial-sh
 
 on property:sys.lmkd.memory.start_reclaim_in_video_record=1
     setprop sys.lmkd.memory.start_reclaim_in_video_record 0
