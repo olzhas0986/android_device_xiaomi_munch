@@ -16,57 +16,81 @@
 
 package org.lineageos.settings.thermal;
 
-import android.app.ActivityManager;
 import android.app.ActivityTaskManager;
 import android.app.ActivityTaskManager.RootTaskInfo;
 import android.app.IActivityTaskManager;
-import android.app.TaskStackListener;
 import android.app.Service;
 import android.app.TaskStackListener;
 import android.content.BroadcastReceiver;
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
+import android.os.Handler;
 import android.os.IBinder;
+import android.os.Looper;
+import android.os.PowerManager;
 import android.os.RemoteException;
 import android.util.Log;
+
+import androidx.preference.PreferenceManager;
 
 public class ThermalService extends Service {
 
     private static final String TAG = "ThermalService";
-    private static final boolean DEBUG = false;
 
-    private String mPreviousApp;
+    private final Handler mHandler = new Handler(Looper.getMainLooper());
     private ThermalUtils mThermalUtils;
-
     private IActivityTaskManager mActivityTaskManager;
+    private PowerManager mPowerManager;
+    private SharedPreferences mSharedPrefs;
+    private boolean mDestroyed;
+    private int mAppliedState = -1;
 
-    private BroadcastReceiver mIntentReceiver = new BroadcastReceiver() {
+    private final BroadcastReceiver mIntentReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            mPreviousApp = "";
-            mThermalUtils.setDefaultThermalProfile();
+            updateThermalProfile();
+        }
+    };
+
+    private final SharedPreferences.OnSharedPreferenceChangeListener mPreferenceListener =
+            (preferences, key) -> {
+                if (ThermalUtils.THERMAL_CONTROL.equals(key)) {
+                    mHandler.post(this::updateThermalProfile);
+                }
+            };
+
+    private final TaskStackListener mTaskListener = new TaskStackListener() {
+        @Override
+        public void onTaskStackChanged() {
+            mHandler.post(ThermalService.this::updateThermalProfile);
         }
     };
 
     @Override
     public void onCreate() {
-        if (DEBUG) Log.d(TAG, "Creating service");
+        super.onCreate();
+        mThermalUtils = new ThermalUtils(this);
+        mPowerManager = getSystemService(PowerManager.class);
+        mSharedPrefs = PreferenceManager.getDefaultSharedPreferences(this);
+        mSharedPrefs.registerOnSharedPreferenceChangeListener(mPreferenceListener);
+        mActivityTaskManager = ActivityTaskManager.getService();
         try {
-            mActivityTaskManager = ActivityTaskManager.getService();
             mActivityTaskManager.registerTaskStackListener(mTaskListener);
         } catch (RemoteException e) {
-            // Do nothing
+            Log.e(TAG, "Unable to register task stack listener", e);
         }
-        mThermalUtils = new ThermalUtils(this);
-        registerReceiver();
-        super.onCreate();
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(Intent.ACTION_SCREEN_OFF);
+        filter.addAction(Intent.ACTION_SCREEN_ON);
+        registerReceiver(mIntentReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
+        updateThermalProfile();
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        if (DEBUG) Log.d(TAG, "Starting service");
+        updateThermalProfile();
         return START_STICKY;
     }
 
@@ -75,28 +99,41 @@ public class ThermalService extends Service {
         return null;
     }
 
-    private void registerReceiver() {
-        IntentFilter filter = new IntentFilter();
-        filter.addAction(Intent.ACTION_SCREEN_OFF);
-        filter.addAction(Intent.ACTION_SCREEN_ON);
-        this.registerReceiver(mIntentReceiver, filter);
+    private void updateThermalProfile() {
+        if (mDestroyed) {
+            return;
+        }
+        String packageName = null;
+        if (mPowerManager.isInteractive()) {
+            try {
+                RootTaskInfo info = mActivityTaskManager.getFocusedRootTaskInfo();
+                if (info != null && info.topActivity != null) {
+                    packageName = info.topActivity.getPackageName();
+                }
+            } catch (RemoteException e) {
+                Log.e(TAG, "Unable to read foreground task", e);
+                return;
+            }
+        }
+        int state = mThermalUtils.getStateForPackage(packageName);
+        if (state != mAppliedState) {
+            mThermalUtils.setThermalProfile(packageName);
+            mAppliedState = state;
+        }
     }
 
-    private final TaskStackListener mTaskListener = new TaskStackListener() {
-        @Override
-        public void onTaskStackChanged() {
-            try {
-                final RootTaskInfo info = mActivityTaskManager.getFocusedRootTaskInfo();
-                if (info == null || info.topActivity == null) {
-                    return;
-                }
-
-                String foregroundApp = info.topActivity.getPackageName();
-                if (!foregroundApp.equals(mPreviousApp)) {
-                    mThermalUtils.setThermalProfile(foregroundApp);
-                    mPreviousApp = foregroundApp;
-                }
-            } catch (Exception e) {}
+    @Override
+    public void onDestroy() {
+        mDestroyed = true;
+        try {
+            mActivityTaskManager.unregisterTaskStackListener(mTaskListener);
+        } catch (RemoteException e) {
+            Log.e(TAG, "Unable to unregister task stack listener", e);
         }
-    };
+        unregisterReceiver(mIntentReceiver);
+        mSharedPrefs.unregisterOnSharedPreferenceChangeListener(mPreferenceListener);
+        mHandler.removeCallbacksAndMessages(null);
+        mThermalUtils.setDefaultThermalProfile();
+        super.onDestroy();
+    }
 }
