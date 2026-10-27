@@ -198,14 +198,10 @@ public class ThermalSettingsFragment extends SettingsBasePreferenceFragment
         }
 
         mAllPackagesAdapter.setEntries(entries, sections, positions);
-        mEntryMap.clear();
-        for (ApplicationsState.AppEntry e : entries) {
-            mEntryMap.put(e.info.packageName, e);
-        }
     }
 
     private void rebuild() {
-        mSession.rebuild(mActivityFilter, ApplicationsState.ALPHA_COMPARATOR);
+        onRebuildComplete(mSession.rebuild(mActivityFilter, ApplicationsState.ALPHA_COMPARATOR));
     }
 
     private int getStateDrawable(int state) {
