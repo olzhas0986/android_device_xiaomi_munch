@@ -41,8 +41,7 @@
 
         <service
             android:name=".thermal.ThermalService"
-            android:exported="true"
-            android:permission="ThermalService" />
+            android:exported="false" />
 
         <activity
             android:name=".thermal.ThermalActivity"
@@ -64,7 +63,7 @@
             <meta-data
                 android:name="com.android.settings.order"
                 android:value="-255" />
-	    <meta-data
+            <meta-data
                 android:name="com.android.settings.summary"
                 android:resource="@string/thermal_summary" />
         </activity>
