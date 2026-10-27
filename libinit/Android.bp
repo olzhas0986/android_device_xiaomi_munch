@@ -5,8 +5,27 @@
 //
 
 cc_library_static {
+    name: "init_xiaomi_kona",
+    srcs: [
+        "init_xiaomi_kona.cpp",
+        "libinit_dalvik_heap.cpp",
+        "libinit_variant.cpp",
+        "libinit_utils.cpp",
+    ],
+    header_libs: ["libvariant_headers"],
+    whole_static_libs: [
+        "libbase",
+    ] + select(soong_config_variable("xiaomi_kona", "variant_lib"), {
+        any @ lib: [lib],
+        default: ["libvariant_default"],
+    }),
+    include_dirs: ["system/core/init"],
+    recovery_available: true,
+}
+
+cc_library_static {
     name: "libvariant_xiaomi_munch",
     srcs: ["libvariant_xiaomi_munch.cpp"],
-    header_libs: ["//device/xiaomi/sm8250-common:libvariant_headers"],
+    header_libs: ["//device/xiaomi/munch:libvariant_headers"],
     recovery_available: true,
 }
