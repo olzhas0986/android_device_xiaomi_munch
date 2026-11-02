@@ -926,6 +926,8 @@ function disable_ppr()
 }
 
 function configure_memory_parameters() {
+    local MemTotal key value unit LimitSize
+
     # Set Memory parameters.
     #
     # Set per_process_reclaim tuning parameters
@@ -948,19 +950,28 @@ function configure_memory_parameters() {
     ProductName=`getprop ro.product.name`
     low_ram=`getprop ro.config.low_ram`
 
-    if true; then
-        echo 0 > /proc/sys/vm/page-cluster
-
-        #add memory limit to camera cgroup
-        MemTotalStr=`cat /proc/meminfo | grep MemTotal`
-        MemTotal=${MemTotalStr:16:8}
-        if [ $MemTotal -gt 8388608 ]; then
-            let LimitSize=838860800
-        else
-            let LimitSize=524288000
+    MemTotal=
+    while read -r key value unit; do
+        if [ "$key" = "MemTotal:" ]; then
+            MemTotal=$value
+            break
         fi
+    done < /proc/meminfo
+    case "$MemTotal" in
+        ''|*[!0-9]*) MemTotal=0 ;;
+    esac
 
-        echo $LimitSize > /dev/memcg/camera/memory.soft_limit_in_bytes
+    if true; then
+        # The camera soft limit is only available with the v1 controller.
+        if [ "$MemTotal" -gt 0 ] &&
+                [ -f /dev/memcg/camera/memory.soft_limit_in_bytes ]; then
+            if [ "$MemTotal" -gt 8388608 ]; then
+                LimitSize=838860800
+            else
+                LimitSize=524288000
+            fi
+            echo "$LimitSize" > /dev/memcg/camera/memory.soft_limit_in_bytes
+        fi
     else
 
         # Read adj series and set adj threshold for PPR and ALMK.
@@ -1058,10 +1069,7 @@ function configure_memory_parameters() {
     echo 1 > /proc/sys/vm/watermark_scale_factor
 
     # Disable the feature of watermark boost for 8G and below device
-    MemTotalStr=`cat /proc/meminfo | grep MemTotal`
-    MemTotal=${MemTotalStr:16:8}
-
-    if [ $MemTotal -le 8388608 ]; then
+    if [ "$MemTotal" -gt 0 ] && [ "$MemTotal" -le 8388608 ]; then
         echo 0 > /proc/sys/vm/watermark_boost_factor
     fi
 
